@@ -104,6 +104,14 @@
   .dims-row .field { flex: 1; margin-bottom: 0; }
   .dims-x { color: var(--ink-faint); font-size: 13px; padding-top: 18px; }
 
+  .pallet-gallery { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .pallet-thumb { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); flex: none; }
+  .pallet-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pallet-thumb .pallet-remove { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: rgba(23,24,27,0.72); color: #fff; border: none; font-size: 13px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+  .pallet-thumb .pallet-spinner { position: absolute; inset: 0; background: rgba(23,24,27,0.55); display: flex; align-items: center; justify-content: center; }
+  .pallet-add { width: 84px; height: 84px; border-radius: 10px; border: 1.5px dashed var(--line-strong); background: var(--surface); display: flex; align-items: center; justify-content: center; flex: none; cursor: pointer; color: var(--ink-faint); }
+  .pallet-add:active { background: var(--surface-2); }
+
   .segmented { display: flex; gap: 6px; }
   .seg-btn { flex: 1; padding: 10px 6px; border-radius: 9px; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink-soft); font-weight: 600; font-size: 13px; cursor: pointer; }
   .seg-btn[aria-pressed="true"][data-val="conforme"] { background: var(--success-soft); border-color: var(--success); color: var(--success); }
@@ -265,6 +273,16 @@
       </div>
 
       <div class="section">
+        <span class="section-label">Palettes</span>
+        <div class="field" style="max-width:180px;">
+          <label for="inpNombrePalettes">Nombre de palettes</label>
+          <input type="number" id="inpNombrePalettes" inputmode="numeric" min="0" placeholder="0">
+        </div>
+        <div class="pallet-gallery" id="palletGallery"></div>
+        <input type="file" accept="image/*" capture="environment" id="photoPaletteInput" style="display:none">
+      </div>
+
+      <div class="section">
         <span class="section-label">État de la marchandise</span>
         <div class="segmented" role="group" aria-label="État de la marchandise">
           <button type="button" class="seg-btn" data-val="conforme" aria-pressed="true">Conforme</button>
@@ -308,6 +326,10 @@
       <div class="detail-photos">
         <figure><img id="detailPhotoBl" alt="Photo du bon de livraison"><figcaption>Bon de livraison</figcaption></figure>
         <figure><img id="detailPhotoProduit" alt="Photo du produit"><figcaption>Produit</figcaption></figure>
+      </div>
+      <div class="section" id="detailPaletteSection" hidden>
+        <span class="section-label">Photos des palettes</span>
+        <div class="pallet-gallery" id="detailPaletteGallery"></div>
       </div>
       <div class="card"><div class="kv-grid" id="detailGrid"></div></div>
       <div style="margin-top:16px;">
@@ -371,7 +393,7 @@
     receptions: [],
     searchText: "",
     detailId: null,
-    photos: { bl: { url: null, uploading: false }, produit: { url: null, uploading: false } },
+    photos: { bl: { url: null, uploading: false }, produit: { url: null, uploading: false }, palettes: [] },
     etat: "conforme"
   };
 
@@ -468,6 +490,51 @@
     return pendingDocId;
   }
 
+  // ---------- photos des palettes (0 à N) ----------
+  function renderPalletGallery() {
+    var gallery = $("palletGallery");
+    var html = state.photos.palettes.map(function (p, idx) {
+      if (p.uploading) {
+        return '<div class="pallet-thumb">' + (p.url ? '<img src="' + escapeHtml(p.url) + '" alt="">' : "") + '<div class="pallet-spinner"><div class="spinner"></div></div></div>';
+      }
+      return '<div class="pallet-thumb"><img src="' + escapeHtml(p.url) + '" alt="Photo palette ' + (idx + 1) + '"><button type="button" class="pallet-remove" data-idx="' + idx + '" aria-label="Supprimer cette photo">×</button></div>';
+    }).join("");
+    html += '<button type="button" class="pallet-add" id="palletAddBtn" aria-label="Ajouter une photo de palette"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>';
+    gallery.innerHTML = html;
+    $("palletAddBtn").addEventListener("click", function () { $("photoPaletteInput").click(); });
+    Array.prototype.forEach.call(gallery.querySelectorAll(".pallet-remove"), function (btn) {
+      btn.addEventListener("click", function () {
+        state.photos.palettes.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
+        renderPalletGallery();
+      });
+    });
+  }
+  function uploadPalettePhoto(file) {
+    if (!state.storage) { showToast("Stockage indisponible pour le moment.", "error"); return; }
+    var docId = getPendingDocId();
+    var entry = { url: null, path: null, uploading: true };
+    state.photos.palettes.push(entry);
+    renderPalletGallery();
+    var path = "receptions/" + docId + "/palette_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7) + ".jpg";
+    var ref = state.storage.ref(path);
+    ref.put(file).then(function () { return ref.getDownloadURL(); }).then(function (url) {
+      entry.url = url; entry.path = path; entry.uploading = false;
+      renderPalletGallery();
+    }).catch(function (err) {
+      var i = state.photos.palettes.indexOf(entry);
+      if (i !== -1) state.photos.palettes.splice(i, 1);
+      renderPalletGallery();
+      showToast("Échec de l'envoi de la photo (" + (err && err.code ? err.code : "erreur") + ").", "error");
+    });
+  }
+  renderPalletGallery();
+  $("photoPaletteInput").addEventListener("change", function () {
+    var file = this.files && this.files[0];
+    if (!file) return;
+    uploadPalettePhoto(file);
+    this.value = "";
+  });
+
   function uploadPhoto(file, key, tile, label) {
     if (!state.storage) { showToast("Stockage indisponible pour le moment.", "error"); return; }
     var docId = getPendingDocId();
@@ -519,12 +586,15 @@
       photoProduitUrl: state.photos.produit.url,
       photoBlPath: state.photos.bl.path || null,
       photoProduitPath: state.photos.produit.path || null,
+      nombrePalettes: $("inpNombrePalettes").value ? Number($("inpNombrePalettes").value) : null,
+      photosPalettesUrls: state.photos.palettes.filter(function (p) { return p.url; }).map(function (p) { return p.url; }),
+      photosPalettesPaths: state.photos.palettes.filter(function (p) { return p.path; }).map(function (p) { return p.path; }),
       emailStatus: "en_attente"
     };
   }
 
   function resetForm() {
-    ["inpFournisseur", "inpCommande", "inpReference", "inpQuantite", "inpPoids", "inpLongueur", "inpLargeur", "inpHauteur", "inpCommentaire", "inpSaisiPar"].forEach(function (id) { $(id).value = ""; });
+    ["inpFournisseur", "inpCommande", "inpReference", "inpQuantite", "inpPoids", "inpLongueur", "inpLargeur", "inpHauteur", "inpNombrePalettes", "inpCommentaire", "inpSaisiPar"].forEach(function (id) { $(id).value = ""; });
     $("inpConditionnement").value = "";
     $("fieldConditionnementAutre").hidden = true;
     $("inpConditionnementAutre").value = "";
@@ -532,9 +602,11 @@
     segBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-val") === "conforme" ? "true" : "false"); });
     state.photos.bl = { url: null, uploading: false };
     state.photos.produit = { url: null, uploading: false };
+    state.photos.palettes = [];
     pendingDocId = null;
     renderPhotoTile($("tileBl"), "bl", "Photo du BL");
     renderPhotoTile($("tileProduit"), "produit", "Photo du produit");
+    renderPalletGallery();
     clearInvalid();
   }
 
@@ -556,7 +628,9 @@
       saisi_par: data.saisiPar || "Non renseigné",
       date: fmtDateTime(data.createdAt),
       photo_bl_url: data.photoBlUrl || "",
-      photo_produit_url: data.photoProduitUrl || ""
+      photo_produit_url: data.photoProduitUrl || "",
+      nombre_palettes: data.nombrePalettes != null ? String(data.nombrePalettes) : "—",
+      photos_palettes: (data.photosPalettesUrls && data.photosPalettesUrls.length) ? data.photosPalettesUrls.join("\n") : "—"
     };
     return emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, params, window.EMAILJS_CONFIG.publicKey)
       .then(function () { if (docRef) docRef.update({ emailStatus: "envoye" }).catch(function () {}); })
@@ -631,6 +705,7 @@
       ["Poids", r.poids != null ? r.poids + " kg" : "—"],
       ["Dimensions", dims],
       ["Conditionnement", r.conditionnement || "—"],
+      ["Nombre de palettes", r.nombrePalettes != null ? String(r.nombrePalettes) : "—"],
       ["État", etatLabel(r.etat)],
       ["Réceptionné par", r.saisiPar || "—"],
       ["Email", r.emailStatus === "envoye" ? "Envoyé" : r.emailStatus === "echec" ? "Échec d'envoi" : "En attente"]
@@ -638,6 +713,11 @@
     if (r.commentaireEtat) rows.push(["Commentaire", r.commentaireEtat, true]);
     $("detailGrid").innerHTML = rows.map(function (row) {
       return '<div class="kv' + (row[2] ? " kv-full" : "") + '"><label>' + escapeHtml(row[0]) + '</label><div class="mono">' + escapeHtml(row[1]) + "</div></div>";
+    }).join("");
+    var paletteUrls = r.photosPalettesUrls || [];
+    $("detailPaletteSection").hidden = paletteUrls.length === 0;
+    $("detailPaletteGallery").innerHTML = paletteUrls.map(function (u, i) {
+      return '<div class="pallet-thumb"><img src="' + escapeHtml(u) + '" alt="Photo palette ' + (i + 1) + '"></div>';
     }).join("");
     setTab("detail");
   }
