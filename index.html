@@ -125,6 +125,8 @@
   .btn-primary { width: 100%; padding: 15px; border-radius: 11px; border: none; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 3px 10px var(--shadow); letter-spacing: 0.01em; }
   .btn-primary:disabled { opacity: 0.6; }
   .btn-secondary { padding: 10px 14px; border-radius: 9px; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink); font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn-danger { border-color: var(--danger); color: var(--danger); }
+  .btn-danger:disabled { opacity: 0.6; }
   .footer-note { text-align: center; font-size: 11.5px; color: var(--ink-faint); margin-top: 9px; }
 
   .empty { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
@@ -332,8 +334,9 @@
         <div class="pallet-gallery" id="detailPaletteGallery"></div>
       </div>
       <div class="card"><div class="kv-grid" id="detailGrid"></div></div>
-      <div style="margin-top:16px;">
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
         <button type="button" class="btn-secondary" id="btnResendEmail">Renvoyer l'email</button>
+        <button type="button" class="btn-secondary btn-danger" id="btnDeleteReception">Supprimer cette réception</button>
       </div>
     </section>
   </main>
@@ -617,6 +620,8 @@
     }
     var dims = (data.longueur || data.largeur || data.hauteur) ? [data.longueur || "?", data.largeur || "?", data.hauteur || "?"].join(" × ") + " cm" : "Non renseignées";
     var params = {
+      titre: "Réception marchandise – " + (data.fournisseur || "fournisseur") + " – " + fmtDateTime(data.createdAt),
+      action: "Nouvelle réception enregistrée.",
       fournisseur: data.fournisseur || "—",
       commande: data.commande || "—",
       reference: data.reference || "—",
@@ -635,6 +640,45 @@
     return emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, params, window.EMAILJS_CONFIG.publicKey)
       .then(function () { if (docRef) docRef.update({ emailStatus: "envoye" }).catch(function () {}); })
       .catch(function (err) { if (docRef) docRef.update({ emailStatus: "echec" }).catch(function () {}); throw err; });
+  }
+
+  // ---------- email de suppression (même template, contenu adapté) ----------
+  function sendDeleteEmail(data) {
+    if (!window.emailjs || !window.EMAILJS_CONFIG || window.EMAILJS_CONFIG.serviceId.indexOf("REMPLACER") === 0) {
+      return Promise.reject(new Error("emailjs_not_configured"));
+    }
+    var dims = (data.longueur || data.largeur || data.hauteur) ? [data.longueur || "?", data.largeur || "?", data.hauteur || "?"].join(" × ") + " cm" : "Non renseignées";
+    var params = {
+      titre: "Suppression réception – " + (data.fournisseur || "fournisseur") + " – " + fmtDateTime(data.createdAt),
+      action: "Cette réception a été supprimée de l'historique le " + fmtDateTime(new Date().toISOString()) + ".",
+      fournisseur: data.fournisseur || "—",
+      commande: data.commande || "—",
+      reference: data.reference || "—",
+      quantite: data.quantite != null ? String(data.quantite) : "—",
+      poids: data.poids != null ? data.poids + " kg" : "—",
+      dimensions: dims,
+      conditionnement: data.conditionnement || "—",
+      etat: etatLabel(data.etat) + (data.commentaireEtat ? " — " + data.commentaireEtat : ""),
+      saisi_par: data.saisiPar || "Non renseigné",
+      date: fmtDateTime(data.createdAt),
+      photo_bl_url: "Supprimée avec la réception",
+      photo_produit_url: "Supprimée avec la réception",
+      nombre_palettes: data.nombrePalettes != null ? String(data.nombrePalettes) : "—",
+      photos_palettes: "Supprimées avec la réception"
+    };
+    return emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, params, window.EMAILJS_CONFIG.publicKey);
+  }
+
+  // ---------- suppression d'une réception (Storage + Firestore) ----------
+  function deleteStorageFile(path) {
+    if (!path || !state.storage) return Promise.resolve();
+    return state.storage.ref(path).delete().catch(function () {});
+  }
+  function deleteReception(r) {
+    var paths = [r.photoBlPath, r.photoProduitPath].concat(r.photosPalettesPaths || []);
+    return Promise.all(paths.map(deleteStorageFile)).then(function () {
+      return state.db.collection("receptions").doc(r.id).delete();
+    });
   }
 
   // ---------- submit ----------
@@ -727,6 +771,33 @@
     var docRef = state.db.collection("receptions").doc(r.id);
     sendAutoEmail(r, docRef).then(function () { showToast("Email envoyé.", "success"); })
       .catch(function () { showToast("Échec de l'envoi de l'email.", "error"); });
+  });
+
+  $("btnDeleteReception").addEventListener("click", function () {
+    var r = state.receptions.find(function (x) { return x.id === state.detailId; });
+    if (!r) return;
+    if (!state.db) { showToast("Connexion indisponible — impossible de supprimer.", "error"); return; }
+    var ok = window.confirm("Supprimer définitivement la réception « " + (r.fournisseur || "sans fournisseur") + " » ? Cette action est irréversible et un email de suppression sera envoyé à routage@lordiffusion.fr.");
+    if (!ok) return;
+    var btn = $("btnDeleteReception");
+    btn.disabled = true; btn.textContent = "Suppression…";
+    deleteReception(r).then(function () {
+      showToast("Réception supprimée.", "success");
+      setTab("history");
+      btn.disabled = false; btn.textContent = "Supprimer cette réception";
+      return sendDeleteEmail(r).then(function () {
+        showToast("Email de suppression envoyé.", "success");
+      });
+    }).catch(function (err) {
+      btn.disabled = false; btn.textContent = "Supprimer cette réception";
+      if (err && err.message === "emailjs_not_configured") {
+        showToast("Réception supprimée, mais l'email de suppression n'est pas configuré.", "error");
+      } else if (err && err.code) {
+        showToast("Échec de la suppression (" + err.code + ").", "error");
+      } else {
+        showToast("Réception supprimée, mais l'email de suppression n'a pas pu être envoyé.", "error");
+      }
+    });
   });
 
   function showCapabilityBanner(msg) { var b = $("capabilityBanner"); b.hidden = false; b.textContent = msg; }
