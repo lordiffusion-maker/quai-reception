@@ -5,9 +5,12 @@ service firebase.storage {
   match /b/{bucket}/o {
     match /receptions/{docId}/{fileName} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null
+      allow create, update: if request.auth != null
         && request.resource.size < 15 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
+      // Autorisé pour permettre la suppression des photos quand une réception
+      // est supprimée depuis l'historique.
+      allow delete: if request.auth != null;
     }
 
     match /{allPaths=**} {

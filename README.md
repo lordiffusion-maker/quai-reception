@@ -39,29 +39,50 @@ automatique), **GitHub Pages** (hébergement du site, gratuit). Comptez 30 à
 1. Créez un compte gratuit sur https://www.emailjs.com.
 2. **Email Services > Add New Service** → **Gmail** → autorisez l'accès avec
    **lordiffusion@gmail.com**. Notez le **Service ID** (ex. `service_xxxxxxx`).
-3. **Email Templates > Create New Template** :
+3. **Email Templates > Create New Template**. Ce même template sert à la fois
+   pour l'email de réception **et** pour l'email de suppression (le titre et
+   la première ligne du contenu s'adaptent automatiquement) :
    - **To email** : `routage@lordiffusion.fr`
    - **From name** : `Quai Réception`
-   - **Subject** : `Réception marchandise – {{fournisseur}} – {{date}}`
+   - **Subject** : `{{{titre}}}`
    - **Content** :
      ```
-     Nouvelle réception de marchandise.
+     {{{action}}}
 
-     Date : {{date}}
-     Fournisseur : {{fournisseur}}
-     N° commande / BL : {{commande}}
-     Référence produit : {{reference}}
-     Quantité : {{quantite}}
-     Poids : {{poids}}
-     Dimensions (L x l x H) : {{dimensions}}
-     Conditionnement : {{conditionnement}}
-     État : {{etat}}
-     Réceptionné par : {{saisi_par}}
+     Date : {{{date}}}
+     Fournisseur : {{{fournisseur}}}
+     N° commande / BL : {{{commande}}}
+     Référence produit : {{{reference}}}
+     Quantité : {{{quantite}}}
+     Poids : {{{poids}}}
+     Dimensions (L x l x H) : {{{dimensions}}}
+     Conditionnement : {{{conditionnement}}}
+     État : {{{etat}}}
+     Réceptionné par : {{{saisi_par}}}
 
-     Photo du BL : {{photo_bl_url}}
-     Photo du produit : {{photo_produit_url}}
+     Nombre de palettes : {{{nombre_palettes}}}
+
+     Photo du BL : {{{photo_bl_url}}}
+     Photo du produit : {{{photo_produit_url}}}
+     Photos des palettes : {{{photos_palettes}}}
      ```
    - Enregistrez, notez le **Template ID** (ex. `template_xxxxxxx`).
+
+   ⚠️ Important : utilisez bien les **triples accolades** `{{{...}}}` et non les
+   doubles `{{...}}`. Avec des doubles accolades, EmailJS encode certains
+   caractères comme `/` en `&#x2F;` (protection anti-injection HTML), ce qui
+   abîme l'affichage des dates (`15&#x2F;09&#x2F;2026` au lieu de
+   `15/09/2026`) et des liens photos. Les triples accolades affichent la
+   valeur telle quelle.
+
+   Le **sujet** et la **première ligne** du contenu sont désormais pilotés par
+   l'application elle-même (`{{{titre}}}` et `{{{action}}}`), pas besoin de
+   les modifier à la main :
+   - Nouvelle réception → sujet `Réception marchandise – Fournisseur – Date`,
+     première ligne `Nouvelle réception enregistrée.`
+   - Suppression → sujet `Suppression réception – Fournisseur – Date`,
+     première ligne `Cette réception a été supprimée de l'historique le
+     [date/heure].`
 4. **Account > General** → copiez la **Public Key**.
 
 ## 3. Compléter la configuration
@@ -136,6 +157,14 @@ partagés automatiquement entre tous les appareils, Android comme iPhone.
 - **Modifier le site plus tard** : éditez les fichiers directement dans
   GitHub (icône crayon sur chaque fichier) et enregistrez — le site se met à
   jour automatiquement en quelques secondes, sans rien recompiler.
+- **Supprimer une réception** : ouvrez-la dans l'historique puis
+  **Supprimer cette réception** (bouton rouge, en bas de la fiche). Une
+  confirmation est demandée, puis la réception et ses photos sont supprimées
+  définitivement, et un email de suppression part automatiquement vers
+  `routage@lordiffusion.fr`. Cette fonction nécessite d'avoir republié les
+  fichiers `firestore.rules` et `storage.rules` fournis (ils autorisent
+  désormais la suppression) et d'avoir mis à jour le template EmailJS avec
+  `{{{titre}}}` / `{{{action}}}` (voir étape 2).
 - **Nom de domaine personnalisé** (ex. `reception.lordiffusion.fr`) :
   possible gratuitement depuis **Settings > Pages > Custom domain**, si vous
   avez un nom de domaine.
