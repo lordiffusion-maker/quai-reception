@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// Règles Firestore — à coller dans Firebase Console > Firestore Database > Règles.
+// Toute personne qui ouvre l'application est connectée anonymement (pas de mot de
+// passe), donc "request.auth != null" limite l'accès aux appareils qui font
+// tourner l'application (et non à n'importe qui sur internet).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /receptions/{docId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['createdAt', 'fournisseur', 'poids'])
+        && request.resource.data.fournisseur is string
+        && request.resource.data.poids is number;
+
+      // Autorisé pour permettre la mise à jour du statut d'envoi de l'email
+      // (emailStatus) après l'enregistrement.
+      allow update: if request.auth != null;
+
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Quai Réception</title>
+
+<!-- Installation sur l'écran d'accueil (Android + iPhone) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#C2551F">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quai Réception">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ink: #1C2126;
+    --ink-soft: #5B6167;
+    --ink-faint: #8B9096;
+    --paper: #F6F3EE;
+    --surface: #FFFFFF;
+    --surface-2: #EFEAE1;
+    --line: #DEDACE;
+    --line-strong: #C7C1B3;
+    --accent: #C2551F;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #F4DFCC;
+    --accent-soft-ink: #7A3313;
+    --success: #2F6B47;
+    --success-soft: #DEEBE1;
+    --warning: #8A6412;
+    --warning-soft: #F3E7C4;
+    --danger: #A83A2E;
+    --danger-soft: #F5DAD5;
+    --shadow: rgba(28, 33, 38, 0.10);
+    --focus: #1C2126;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #F1EEE7; --ink-soft: #B7B0A2; --ink-faint: #82796C; --paper: #17181B; --surface: #1F2226; --surface-2: #282B2F; --line: #383B3F; --line-strong: #46494D; --accent: #E88A4E; --accent-ink: #17181B; --accent-soft: #3B2A1B; --accent-soft-ink: #F0B786; --success: #7FBF95; --success-soft: #21322A; --warning: #E3B95B; --warning-soft: #392E17; --danger: #E38375; --danger-soft: #3B2420; --shadow: rgba(0, 0, 0, 0.45); --focus: #F1EEE7; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px; line-height: 1.5; -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace; font-variant-numeric: tabular-nums; }
+  h1, h2, h3 { font-family: "Archivo", ui-sans-serif, system-ui, sans-serif; text-wrap: balance; margin: 0; }
+  button { font-family: inherit; }
+  input, select, textarea { font-family: inherit; font-size: 16px; color: var(--ink); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  #app { max-width: 560px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+  .appbar { position: sticky; top: 0; z-index: 20; background: var(--paper); border-bottom: 1px solid var(--line); padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 0 16px; }
+  .appbar-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .brand-mark { width: 30px; height: 30px; border-radius: 7px; background: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
+  .brand-mark svg { width: 17px; height: 17px; display: block; }
+  .brand h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); display: inline-block; margin-right: 5px; }
+  .conn-dot.ok { background: var(--success); }
+  .conn-dot.err { background: var(--danger); }
+
+  .tabs { display: flex; gap: 4px; margin-top: 14px; }
+  .tab { flex: 1; padding: 10px 8px 12px 8px; text-align: center; background: none; border: none; color: var(--ink-soft); font-weight: 600; font-size: 13.5px; letter-spacing: 0.01em; border-bottom: 2px solid transparent; cursor: pointer; }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+  main { flex: 1; padding: 18px 16px 110px 16px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .section { margin-bottom: 22px; }
+  .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; font-weight: 600; color: var(--ink-faint); margin-bottom: 10px; display: block; }
+
+  .photo-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .photo-tile { aspect-ratio: 4/5; border-radius: 12px; border: 1.5px dashed var(--line-strong); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 10px; position: relative; overflow: hidden; width: 100%; text-align: center; }
+  .photo-tile:active { background: var(--surface-2); }
+  .photo-tile.has-photo { border-style: solid; border-color: var(--line); padding: 0; }
+  .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-tile .ph-icon { color: var(--ink-faint); }
+  .photo-tile .ph-label { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+  .photo-tile .ph-retake { position: absolute; bottom: 6px; right: 6px; background: rgba(23,24,27,0.72); color: #fff; font-size: 11px; font-weight: 600; padding: 5px 9px; border-radius: 20px; letter-spacing: 0.02em; }
+  .photo-tile .ph-spinner { position: absolute; inset: 0; background: rgba(23,24,27,0.55); display: flex; align-items: center; justify-content: center; }
+  .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,0.35); border-top-color: #fff; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; }
+  .field input[type="text"], .field input[type="number"], .field select, .field textarea { width: 100%; padding: 11px 12px; border-radius: 9px; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field.invalid input, .field.invalid select { border-color: var(--danger); background: var(--danger-soft); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dims-row { display: flex; align-items: center; gap: 6px; }
+  .dims-row .field { flex: 1; margin-bottom: 0; }
+  .dims-x { color: var(--ink-faint); font-size: 13px; padding-top: 18px; }
+
+  .segmented { display: flex; gap: 6px; }
+  .seg-btn { flex: 1; padding: 10px 6px; border-radius: 9px; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink-soft); font-weight: 600; font-size: 13px; cursor: pointer; }
+  .seg-btn[aria-pressed="true"][data-val="conforme"] { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+  .seg-btn[aria-pressed="true"][data-val="endommage"] { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+  .seg-btn[aria-pressed="true"][data-val="manquant"] { background: var(--warning-soft); border-color: var(--warning); color: var(--warning); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 14px; box-shadow: 0 1px 2px var(--shadow); }
+
+  .footer-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: linear-gradient(to top, var(--paper) 60%, transparent); padding: 18px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px; display: flex; justify-content: center; }
+  .footer-bar-inner { max-width: 560px; width: 100%; }
+  .btn-primary { width: 100%; padding: 15px; border-radius: 11px; border: none; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 3px 10px var(--shadow); letter-spacing: 0.01em; }
+  .btn-primary:disabled { opacity: 0.6; }
+  .btn-secondary { padding: 10px 14px; border-radius: 9px; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink); font-weight: 600; font-size: 13px; cursor: pointer; }
+  .footer-note { text-align: center; font-size: 11.5px; color: var(--ink-faint); margin-top: 9px; }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
+  .empty svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.6; }
+  .empty p { font-size: 13.5px; }
+
+  .search-field { position: relative; margin-bottom: 14px; }
+  .search-field input { width: 100%; padding: 11px 12px 11px 36px; border-radius: 9px; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+  .search-field svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-faint); width: 16px; height: 16px; }
+
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .row-card { display: flex; gap: 11px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; cursor: pointer; text-align: left; width: 100%; }
+  .row-thumb { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; flex: none; background: var(--surface-2); }
+  .row-main { flex: 1; min-width: 0; }
+  .row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .row-supplier { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-date { font-size: 11px; color: var(--ink-faint); flex: none; }
+  .row-sub { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+  .row-ref { font-size: 12px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .chip { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 20px; flex: none; }
+  .chip.conforme { background: var(--success-soft); color: var(--success); }
+  .chip.endommage { background: var(--danger-soft); color: var(--danger); }
+  .chip.manquant { background: var(--warning-soft); color: var(--warning); }
+  .chip.pending { background: var(--surface-2); color: var(--ink-faint); }
+
+  .detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .back-btn { width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid var(--line-strong); background: var(--surface); display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; color: var(--ink); }
+  .detail-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .detail-photos figure { margin: 0; }
+  .detail-photos img { width: 100%; aspect-ratio: 4/5; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); display: block; background: var(--surface-2); }
+  .detail-photos figcaption { font-size: 11px; color: var(--ink-faint); margin-top: 5px; text-align: center; }
+  .kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .kv-grid .kv-full { grid-column: 1 / -1; }
+  .kv label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 600; margin-bottom: 3px; }
+  .kv div { font-size: 14.5px; font-weight: 500; }
+  .kv .mono { font-size: 14px; }
+
+  .toast-stack { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: 0; right: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+  .toast { background: var(--ink); color: var(--paper); padding: 11px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 500; box-shadow: 0 6px 18px var(--shadow); max-width: 88%; display: flex; align-items: center; gap: 8px; }
+  .toast.success::before { content: "✓"; color: var(--success); font-weight: 800; }
+  .toast.error { background: var(--danger); color: #fff; }
+
+  .banner { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--ink-soft); margin-bottom: 16px; }
+
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; border-top-color: rgba(255,255,255,0.9); } }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="appbar">
+    <div class="appbar-top">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8.5L12 4l9 4.5M3 8.5v9L12 22M3 8.5L12 13M21 8.5v9L12 22M21 8.5L12 13M12 13v9" stroke="white" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+        </div>
+        <div><h1>Quai Réception</h1></div>
+      </div>
+      <span class="brand-sub" id="connBadge"><span class="conn-dot" id="connDot"></span><span id="connText">Connexion…</span></span>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tabBtnNew" role="tab" aria-selected="true">Nouvelle réception</button>
+      <button class="tab" id="tabBtnHistory" role="tab" aria-selected="false">Historique</button>
+    </div>
+  </div>
+
+  <main>
+    <section class="view active" id="viewNew">
+      <div class="banner" id="capabilityBanner" hidden></div>
+
+      <div class="section">
+        <span class="section-label">Photos</span>
+        <div class="photo-row">
+          <button type="button" class="photo-tile" id="tileBl" aria-label="Photo du bon de livraison">
+            <svg class="ph-icon" width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" stroke="currentColor" stroke-width="1.6"/></svg>
+            <span class="ph-label">Photo du BL</span>
+          </button>
+          <button type="button" class="photo-tile" id="tileProduit" aria-label="Photo du produit">
+            <svg class="ph-icon" width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" stroke="currentColor" stroke-width="1.6"/></svg>
+            <span class="ph-label">Photo du produit</span>
+          </button>
+        </div>
+        <input type="file" accept="image/*" capture="environment" id="photoBlInput" style="display:none">
+        <input type="file" accept="image/*" capture="environment" id="photoProduitInput" style="display:none">
+      </div>
+
+      <div class="section">
+        <span class="section-label">Identification</span>
+        <div class="field" id="fieldFournisseur">
+          <label for="inpFournisseur">Fournisseur</label>
+          <input type="text" id="inpFournisseur" placeholder="Ex. Transports Lefèvre">
+        </div>
+        <div class="field" id="fieldCommande">
+          <label for="inpCommande">N° de commande / BL</label>
+          <input type="text" id="inpCommande" placeholder="Ex. BL-48210">
+        </div>
+      </div>
+
+      <div class="section">
+        <span class="section-label">Marchandise</span>
+        <div class="row2">
+          <div class="field">
+            <label for="inpReference">Référence produit</label>
+            <input type="text" id="inpReference" placeholder="Ex. REF-2201">
+          </div>
+          <div class="field">
+            <label for="inpQuantite">Quantité</label>
+            <input type="number" id="inpQuantite" inputmode="numeric" min="0" placeholder="0">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field" id="fieldPoids">
+            <label for="inpPoids">Poids (kg)</label>
+            <input type="number" id="inpPoids" inputmode="decimal" min="0" step="0.1" placeholder="0.0">
+          </div>
+          <div class="field">
+            <label for="inpConditionnement">Conditionnement</label>
+            <select id="inpConditionnement">
+              <option value="">Choisir…</option>
+              <option>Carton</option>
+              <option>Palette filmée</option>
+              <option>Palette bois</option>
+              <option>Sac</option>
+              <option>Caisse bois</option>
+              <option>Rouleau / bobine</option>
+              <option>Sans emballage</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" id="fieldConditionnementAutre" hidden>
+          <label for="inpConditionnementAutre">Préciser le conditionnement</label>
+          <input type="text" id="inpConditionnementAutre" placeholder="Ex. Housse carton sur mesure">
+        </div>
+        <div class="field">
+          <label>Dimensions (cm)</label>
+          <div class="dims-row">
+            <div class="field"><input type="number" id="inpLongueur" inputmode="decimal" min="0" placeholder="L"></div>
+            <span class="dims-x">×</span>
+            <div class="field"><input type="number" id="inpLargeur" inputmode="decimal" min="0" placeholder="l"></div>
+            <span class="dims-x">×</span>
+            <div class="field"><input type="number" id="inpHauteur" inputmode="decimal" min="0" placeholder="H"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <span class="section-label">État de la marchandise</span>
+        <div class="segmented" role="group" aria-label="État de la marchandise">
+          <button type="button" class="seg-btn" data-val="conforme" aria-pressed="true">Conforme</button>
+          <button type="button" class="seg-btn" data-val="endommage" aria-pressed="false">Endommagé</button>
+          <button type="button" class="seg-btn" data-val="manquant" aria-pressed="false">Manquant</button>
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label for="inpCommentaire">Commentaire (optionnel)</label>
+          <textarea id="inpCommentaire" placeholder="Ex. 1 carton écrasé côté droit, contenu vérifié"></textarea>
+        </div>
+      </div>
+
+      <div class="section">
+        <span class="section-label">Réception</span>
+        <div class="field">
+          <label for="inpSaisiPar">Réceptionné par</label>
+          <input type="text" id="inpSaisiPar" placeholder="Votre nom">
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="viewHistory">
+      <div class="search-field">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input type="text" id="inpSearch" placeholder="Rechercher un fournisseur, une référence…">
+      </div>
+      <div class="list" id="historyList"></div>
+      <div class="empty" id="historyEmpty" hidden>
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        <p>Aucune réception enregistrée pour le moment.</p>
+      </div>
+    </section>
+
+    <section class="view" id="viewDetail">
+      <div class="detail-header">
+        <button type="button" class="back-btn" id="btnBackFromDetail" aria-label="Retour">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <h2 id="detailTitle" style="font-size:16px;font-weight:700;"></h2>
+      </div>
+      <div class="detail-photos">
+        <figure><img id="detailPhotoBl" alt="Photo du bon de livraison"><figcaption>Bon de livraison</figcaption></figure>
+        <figure><img id="detailPhotoProduit" alt="Photo du produit"><figcaption>Produit</figcaption></figure>
+      </div>
+      <div class="card"><div class="kv-grid" id="detailGrid"></div></div>
+      <div style="margin-top:16px;">
+        <button type="button" class="btn-secondary" id="btnResendEmail">Renvoyer l'email</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="footer-bar" id="footerBarNew">
+    <div class="footer-bar-inner">
+      <button type="button" class="btn-primary" id="btnSubmit">Enregistrer la réception</button>
+      <p class="footer-note">Un email récapitulatif part automatiquement vers <strong>routage@lordiffusion.fr</strong>.</p>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack"></div>
+</div>
+
+<!-- ============================================================
+     CONFIGURATION — à compléter avant de compiler l'application.
+     Voir le README pour savoir où récupérer ces valeurs.
+     ============================================================ -->
+<script>
+  // 1) Config Firebase : Console Firebase > Paramètres du projet > Vos applications > App Web
+  window.FIREBASE_CONFIG = {
+    apiKey: "REMPLACER_apiKey",
+    authDomain: "REMPLACER_authDomain",
+    projectId: "REMPLACER_projectId",
+    storageBucket: "REMPLACER_storageBucket",
+    messagingSenderId: "REMPLACER_messagingSenderId",
+    appId: "REMPLACER_appId"
+  };
+
+  // 2) Config EmailJS : emailjs.com > Account > General (Public Key), Email Services (Service ID), Email Templates (Template ID)
+  window.EMAILJS_CONFIG = {
+    publicKey: "REMPLACER_publicKey",
+    serviceId: "REMPLACER_serviceId",
+    templateId: "REMPLACER_templateId"
+  };
+</script>
+
+<!-- Firebase (compat build — pas besoin de bundler) -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  var CONDITIONNEMENT_OTHER = "Autre";
+
+  var state = {
+    db: null,
+    storage: null,
+    ready: false,
+    tab: "new",
+    receptions: [],
+    searchText: "",
+    detailId: null,
+    photos: { bl: { url: null, uploading: false }, produit: { url: null, uploading: false } },
+    etat: "conforme"
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmtDateTime(iso) {
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }) + " · " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return iso || ""; }
+  }
+  function fmtDateShort(iso) {
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return ""; }
+  }
+  function etatLabel(v) { return v === "endommage" ? "Endommagé" : v === "manquant" ? "Manquant / incomplet" : "Conforme"; }
+  function showToast(msg, type) {
+    var stack = $("toastStack");
+    var el = document.createElement("div");
+    el.className = "toast" + (type ? " " + type : "");
+    el.textContent = msg;
+    stack.appendChild(el);
+    setTimeout(function () {
+      el.style.transition = "opacity 0.3s"; el.style.opacity = "0";
+      setTimeout(function () { el.remove(); }, 320);
+    }, 2800);
+  }
+  function setConn(status, label) {
+    var dot = $("connDot");
+    dot.className = "conn-dot" + (status ? " " + status : "");
+    $("connText").textContent = label;
+  }
+
+  function setTab(tab) {
+    state.tab = tab;
+    $("viewNew").classList.toggle("active", tab === "new");
+    $("viewHistory").classList.toggle("active", tab === "history");
+    $("viewDetail").classList.toggle("active", tab === "detail");
+    $("tabBtnNew").setAttribute("aria-selected", tab === "new" ? "true" : "false");
+    $("tabBtnHistory").setAttribute("aria-selected", tab === "history" || tab === "detail" ? "true" : "false");
+    $("footerBarNew").style.display = tab === "new" ? "flex" : "none";
+  }
+  $("tabBtnNew").addEventListener("click", function () { setTab("new"); });
+  $("tabBtnHistory").addEventListener("click", function () { setTab("history"); renderHistory(); });
+  $("btnBackFromDetail").addEventListener("click", function () { setTab("history"); });
+
+  var segBtns = document.querySelectorAll(".seg-btn");
+  segBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      state.etat = btn.getAttribute("data-val");
+      segBtns.forEach(function (b) { b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
+    });
+  });
+
+  $("inpConditionnement").addEventListener("change", function () {
+    $("fieldConditionnementAutre").hidden = this.value !== CONDITIONNEMENT_OTHER;
+  });
+
+  function wirePhotoTile(tileId, inputId, key, label) {
+    var tile = $(tileId); var input = $(inputId);
+    tile.addEventListener("click", function () { input.click(); });
+    input.addEventListener("change", function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      uploadPhoto(file, key, tile, label);
+      input.value = "";
+    });
+  }
+  function renderPhotoTile(tile, key, label) {
+    var ph = state.photos[key];
+    if (ph.uploading) {
+      tile.classList.add("has-photo");
+      tile.innerHTML = (ph.url ? '<img src="' + escapeHtml(ph.url) + '" alt="">' : "") + '<div class="ph-spinner"><div class="spinner"></div></div>';
+      return;
+    }
+    if (ph.url) {
+      tile.classList.add("has-photo");
+      tile.innerHTML = '<img src="' + escapeHtml(ph.url) + '" alt="' + escapeHtml(label) + '"><span class="ph-retake">Reprendre</span>';
+    } else {
+      tile.classList.remove("has-photo");
+      tile.innerHTML = '<svg class="ph-icon" width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" stroke="currentColor" stroke-width="1.6"/></svg><span class="ph-label">' + escapeHtml(label) + "</span>";
+    }
+  }
+
+  var pendingDocId = null;
+  function getPendingDocId() {
+    if (!pendingDocId && state.db) pendingDocId = state.db.collection("receptions").doc().id;
+    return pendingDocId;
+  }
+
+  function uploadPhoto(file, key, tile, label) {
+    if (!state.storage) { showToast("Stockage indisponible pour le moment.", "error"); return; }
+    var docId = getPendingDocId();
+    state.photos[key].uploading = true;
+    renderPhotoTile(tile, key, label);
+    var path = "receptions/" + docId + "/" + key + "_" + Date.now() + ".jpg";
+    var ref = state.storage.ref(path);
+    ref.put(file).then(function () { return ref.getDownloadURL(); }).then(function (url) {
+      state.photos[key] = { url: url, path: path, uploading: false };
+      renderPhotoTile(tile, key, label);
+    }).catch(function (err) {
+      state.photos[key].uploading = false;
+      renderPhotoTile(tile, key, label);
+      showToast("Échec de l'envoi de la photo (" + (err && err.code ? err.code : "erreur") + ").", "error");
+    });
+  }
+  wirePhotoTile("tileBl", "photoBlInput", "bl", "Photo du BL");
+  wirePhotoTile("tileProduit", "photoProduitInput", "produit", "Photo du produit");
+
+  function clearInvalid() { ["fieldFournisseur", "fieldPoids"].forEach(function (id) { $(id).classList.remove("invalid"); }); }
+  function validateForm() {
+    clearInvalid();
+    var missing = [];
+    if (!$("inpFournisseur").value.trim()) { missing.push("le fournisseur"); $("fieldFournisseur").classList.add("invalid"); }
+    var poids = parseFloat($("inpPoids").value);
+    if (!(poids > 0)) { missing.push("le poids"); $("fieldPoids").classList.add("invalid"); }
+    if (!state.photos.bl.url) missing.push("la photo du BL");
+    if (!state.photos.produit.url) missing.push("la photo du produit");
+    return missing;
+  }
+
+  function collectFormData() {
+    var conditionnement = $("inpConditionnement").value;
+    return {
+      createdAt: new Date().toISOString(),
+      fournisseur: $("inpFournisseur").value.trim(),
+      commande: $("inpCommande").value.trim(),
+      reference: $("inpReference").value.trim(),
+      quantite: $("inpQuantite").value ? Number($("inpQuantite").value) : null,
+      poids: $("inpPoids").value ? Number($("inpPoids").value) : null,
+      longueur: $("inpLongueur").value ? Number($("inpLongueur").value) : null,
+      largeur: $("inpLargeur").value ? Number($("inpLargeur").value) : null,
+      hauteur: $("inpHauteur").value ? Number($("inpHauteur").value) : null,
+      conditionnement: conditionnement === CONDITIONNEMENT_OTHER ? ($("inpConditionnementAutre").value.trim() || "Autre") : conditionnement,
+      etat: state.etat,
+      commentaireEtat: $("inpCommentaire").value.trim(),
+      saisiPar: $("inpSaisiPar").value.trim(),
+      photoBlUrl: state.photos.bl.url,
+      photoProduitUrl: state.photos.produit.url,
+      photoBlPath: state.photos.bl.path || null,
+      photoProduitPath: state.photos.produit.path || null,
+      emailStatus: "en_attente"
+    };
+  }
+
+  function resetForm() {
+    ["inpFournisseur", "inpCommande", "inpReference", "inpQuantite", "inpPoids", "inpLongueur", "inpLargeur", "inpHauteur", "inpCommentaire", "inpSaisiPar"].forEach(function (id) { $(id).value = ""; });
+    $("inpConditionnement").value = "";
+    $("fieldConditionnementAutre").hidden = true;
+    $("inpConditionnementAutre").value = "";
+    state.etat = "conforme";
+    segBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-val") === "conforme" ? "true" : "false"); });
+    state.photos.bl = { url: null, uploading: false };
+    state.photos.produit = { url: null, uploading: false };
+    pendingDocId = null;
+    renderPhotoTile($("tileBl"), "bl", "Photo du BL");
+    renderPhotoTile($("tileProduit"), "produit", "Photo du produit");
+    clearInvalid();
+  }
+
+  // ---------- email (EmailJS, automatique, depuis Gmail) ----------
+  function sendAutoEmail(data, docRef) {
+    if (!window.emailjs || !window.EMAILJS_CONFIG || window.EMAILJS_CONFIG.serviceId.indexOf("REMPLACER") === 0) {
+      return Promise.reject(new Error("emailjs_not_configured"));
+    }
+    var dims = (data.longueur || data.largeur || data.hauteur) ? [data.longueur || "?", data.largeur || "?", data.hauteur || "?"].join(" × ") + " cm" : "Non renseignées";
+    var params = {
+      fournisseur: data.fournisseur || "—",
+      commande: data.commande || "—",
+      reference: data.reference || "—",
+      quantite: data.quantite != null ? String(data.quantite) : "—",
+      poids: data.poids != null ? data.poids + " kg" : "—",
+      dimensions: dims,
+      conditionnement: data.conditionnement || "—",
+      etat: etatLabel(data.etat) + (data.commentaireEtat ? " — " + data.commentaireEtat : ""),
+      saisi_par: data.saisiPar || "Non renseigné",
+      date: fmtDateTime(data.createdAt),
+      photo_bl_url: data.photoBlUrl || "",
+      photo_produit_url: data.photoProduitUrl || ""
+    };
+    return emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, params, window.EMAILJS_CONFIG.publicKey)
+      .then(function () { if (docRef) docRef.update({ emailStatus: "envoye" }).catch(function () {}); })
+      .catch(function (err) { if (docRef) docRef.update({ emailStatus: "echec" }).catch(function () {}); throw err; });
+  }
+
+  // ---------- submit ----------
+  $("btnSubmit").addEventListener("click", function () {
+    var missing = validateForm();
+    if (missing.length) { showToast("Merci de renseigner : " + missing.join(", ") + ".", "error"); return; }
+    if (!state.db) { showToast("Connexion indisponible — impossible d'enregistrer.", "error"); return; }
+    var data = collectFormData();
+    var docId = getPendingDocId();
+    var btn = $("btnSubmit");
+    btn.disabled = true; btn.textContent = "Enregistrement…";
+    var docRef = state.db.collection("receptions").doc(docId);
+    docRef.set(data).then(function () {
+      showToast("Réception enregistrée.", "success");
+      resetForm();
+      btn.disabled = false; btn.textContent = "Enregistrer la réception";
+      return sendAutoEmail(data, docRef).then(function () {
+        showToast("Email envoyé à routage@lordiffusion.fr.", "success");
+      });
+    }).catch(function (err) {
+      btn.disabled = false; btn.textContent = "Enregistrer la réception";
+      if (err && err.message === "emailjs_not_configured") {
+        showToast("Réception enregistrée, mais l'envoi d'email n'est pas encore configuré.", "error");
+      } else if (err && err.code) {
+        showToast("Échec de l'enregistrement (" + err.code + ").", "error");
+      } else {
+        showToast("L'email n'a pas pu être envoyé (réception bien enregistrée).", "error");
+      }
+    });
+  });
+
+  // ---------- history ----------
+  function renderHistory() {
+    var list = $("historyList");
+    var q = state.searchText.trim().toLowerCase();
+    var items = state.receptions.filter(function (r) {
+      if (!q) return true;
+      return [r.fournisseur, r.reference, r.commande].some(function (v) { return (v || "").toLowerCase().indexOf(q) !== -1; });
+    });
+    $("historyEmpty").hidden = items.length !== 0;
+    list.innerHTML = items.map(function (r) {
+      var thumb = r.photoProduitUrl || r.photoBlUrl;
+      var emailChip = r.emailStatus === "envoye" ? "" : '<span class="chip pending">Email ' + (r.emailStatus === "echec" ? "échoué" : "en attente") + "</span>";
+      return '<button type="button" class="row-card" data-id="' + escapeHtml(r.id) + '">' +
+        (thumb ? '<img class="row-thumb" src="' + escapeHtml(thumb) + '" alt="">' : '<div class="row-thumb"></div>') +
+        '<div class="row-main"><div class="row-top"><span class="row-supplier">' + escapeHtml(r.fournisseur || "Fournisseur non renseigné") + "</span><span class=\"row-date mono\">" + escapeHtml(fmtDateShort(r.createdAt)) + "</span></div>" +
+        '<div class="row-sub"><span class="chip ' + escapeHtml(r.etat || "conforme") + '">' + escapeHtml(etatLabel(r.etat)) + "</span><span class=\"row-ref mono\">" + escapeHtml(r.reference || r.commande || "") + "</span>" + emailChip + "</div></div></button>";
+    }).join("");
+    Array.prototype.forEach.call(list.querySelectorAll(".row-card"), function (el) {
+      el.addEventListener("click", function () { openDetail(el.getAttribute("data-id")); });
+    });
+  }
+  $("inpSearch").addEventListener("input", function () { state.searchText = this.value; renderHistory(); });
+
+  function openDetail(id) {
+    var r = state.receptions.find(function (x) { return x.id === id; });
+    if (!r) return;
+    state.detailId = id;
+    $("detailTitle").textContent = r.fournisseur || "Réception";
+    $("detailPhotoBl").src = r.photoBlUrl || "";
+    $("detailPhotoProduit").src = r.photoProduitUrl || "";
+    var dims = (r.longueur || r.largeur || r.hauteur) ? [r.longueur || "?", r.largeur || "?", r.hauteur || "?"].join(" × ") + " cm" : "—";
+    var rows = [
+      ["Date", fmtDateTime(r.createdAt), true],
+      ["N° commande / BL", r.commande || "—"],
+      ["Référence", r.reference || "—"],
+      ["Quantité", r.quantite != null ? String(r.quantite) : "—"],
+      ["Poids", r.poids != null ? r.poids + " kg" : "—"],
+      ["Dimensions", dims],
+      ["Conditionnement", r.conditionnement || "—"],
+      ["État", etatLabel(r.etat)],
+      ["Réceptionné par", r.saisiPar || "—"],
+      ["Email", r.emailStatus === "envoye" ? "Envoyé" : r.emailStatus === "echec" ? "Échec d'envoi" : "En attente"]
+    ];
+    if (r.commentaireEtat) rows.push(["Commentaire", r.commentaireEtat, true]);
+    $("detailGrid").innerHTML = rows.map(function (row) {
+      return '<div class="kv' + (row[2] ? " kv-full" : "") + '"><label>' + escapeHtml(row[0]) + '</label><div class="mono">' + escapeHtml(row[1]) + "</div></div>";
+    }).join("");
+    setTab("detail");
+  }
+  $("btnResendEmail").addEventListener("click", function () {
+    var r = state.receptions.find(function (x) { return x.id === state.detailId; });
+    if (!r) return;
+    var docRef = state.db.collection("receptions").doc(r.id);
+    sendAutoEmail(r, docRef).then(function () { showToast("Email envoyé.", "success"); })
+      .catch(function () { showToast("Échec de l'envoi de l'email.", "error"); });
+  });
+
+  function showCapabilityBanner(msg) { var b = $("capabilityBanner"); b.hidden = false; b.textContent = msg; }
+
+  function subscribeReceptions() {
+    state.db.collection("receptions").orderBy("createdAt", "desc").limit(500).onSnapshot(function (snap) {
+      state.receptions = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      renderHistory();
+    }, function (err) {
+      showCapabilityBanner("Historique indisponible (" + err.code + ").");
+    });
+  }
+
+  function init() {
+    if (!window.firebase || window.FIREBASE_CONFIG.apiKey.indexOf("REMPLACER") === 0) {
+      setConn("err", "Non configuré");
+      showCapabilityBanner("L'application n'est pas encore configurée : complétez FIREBASE_CONFIG et EMAILJS_CONFIG dans www/index.html avant de compiler l'APK (voir le README).");
+      return;
+    }
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+    if (window.emailjs && window.EMAILJS_CONFIG.publicKey.indexOf("REMPLACER") !== 0) {
+      emailjs.init({ publicKey: window.EMAILJS_CONFIG.publicKey });
+    }
+    setConn("", "Connexion…");
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (user) {
+        state.db = firebase.firestore();
+        state.storage = firebase.storage();
+        setConn("ok", "Connecté");
+        subscribeReceptions();
+      }
+    });
+    firebase.auth().signInAnonymously().catch(function (err) {
+      setConn("err", "Connexion impossible");
+      showCapabilityBanner("Impossible de se connecter (" + err.code + "). Vérifiez que l'authentification anonyme est activée dans Firebase et que le téléphone a du réseau.");
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
