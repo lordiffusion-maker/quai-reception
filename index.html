@@ -333,19 +333,19 @@
 <script>
   // 1) Config Firebase : Console Firebase > Paramètres du projet > Vos applications > App Web
   window.FIREBASE_CONFIG = {
-    apiKey: "REMPLACER_apiKey",
-    authDomain: "REMPLACER_authDomain",
-    projectId: "REMPLACER_projectId",
-    storageBucket: "REMPLACER_storageBucket",
-    messagingSenderId: "REMPLACER_messagingSenderId",
-    appId: "REMPLACER_appId"
+    apiKey: "AIzaSyCKT4hV2PB_aGOZVKfw6azCjAh_ophLwMk",
+    authDomain: "reception-marchandises-e839c.firebaseapp.com",
+    projectId: "reception-marchandises-e839c",
+    storageBucket: "reception-marchandises-e839c.firebasestorage.app",
+    messagingSenderId: "619230522743",
+    appId: "1:619230522743:web:ccc46be3fd113f34ba0572"
   };
 
   // 2) Config EmailJS : emailjs.com > Account > General (Public Key), Email Services (Service ID), Email Templates (Template ID)
   window.EMAILJS_CONFIG = {
-    publicKey: "REMPLACER_publicKey",
-    serviceId: "REMPLACER_serviceId",
-    templateId: "REMPLACER_templateId"
+    publicKey: "CpkR3q3HaC1Ud0Fvw",
+    serviceId: "service_7yxocmc",
+    templateId: "template_7znvk4o"
   };
 </script>
 
@@ -663,7 +663,7 @@
   function init() {
     if (!window.firebase || window.FIREBASE_CONFIG.apiKey.indexOf("REMPLACER") === 0) {
       setConn("err", "Non configuré");
-      showCapabilityBanner("L'application n'est pas encore configurée : complétez FIREBASE_CONFIG et EMAILJS_CONFIG dans www/index.html avant de compiler l'APK (voir le README).");
+      showCapabilityBanner("L'application n'est pas encore configurée : complétez FIREBASE_CONFIG et EMAILJS_CONFIG dans index.html (voir le README).");
       return;
     }
     firebase.initializeApp(window.FIREBASE_CONFIG);
