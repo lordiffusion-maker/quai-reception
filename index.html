@@ -240,7 +240,7 @@
         </div>
         <div class="row2">
           <div class="field" id="fieldPoids">
-            <label for="inpPoids">Poids (kg)</label>
+            <label for="inpPoids">Poids (kg) — optionnel</label>
             <input type="number" id="inpPoids" inputmode="decimal" min="0" step="0.1" placeholder="0.0">
           </div>
           <div class="field">
@@ -562,8 +562,6 @@
     clearInvalid();
     var missing = [];
     if (!$("inpFournisseur").value.trim()) { missing.push("le fournisseur"); $("fieldFournisseur").classList.add("invalid"); }
-    var poids = parseFloat($("inpPoids").value);
-    if (!(poids > 0)) { missing.push("le poids"); $("fieldPoids").classList.add("invalid"); }
     if (!state.photos.bl.url) missing.push("la photo du BL");
     if (!state.photos.produit.url) missing.push("la photo du produit");
     return missing;
