@@ -75,7 +75,7 @@
   .tab { flex: 1; padding: 10px 8px 12px 8px; text-align: center; background: none; border: none; color: var(--ink-soft); font-weight: 600; font-size: 13.5px; letter-spacing: 0.01em; border-bottom: 2px solid transparent; cursor: pointer; }
   .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
 
-  main { flex: 1; padding: 18px 16px 110px 16px; }
+  main { flex: 1; padding: 18px 16px 150px 16px; }
   .view { display: none; }
   .view.active { display: block; }
 
@@ -687,6 +687,8 @@
     if (missing.length) { showToast("Merci de renseigner : " + missing.join(", ") + ".", "error"); return; }
     if (!state.db) { showToast("Connexion indisponible — impossible d'enregistrer.", "error"); return; }
     var data = collectFormData();
+    var confirmMsg = "Confirmer l'enregistrement de cette réception" + (data.fournisseur ? " (" + data.fournisseur + ")" : "") + " ?\n\nUn email récapitulatif sera envoyé automatiquement à routage@lordiffusion.fr.";
+    if (!window.confirm(confirmMsg)) return;
     var docId = getPendingDocId();
     var btn = $("btnSubmit");
     btn.disabled = true; btn.textContent = "Enregistrement…";
